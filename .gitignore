@@ -1,18 +1,34 @@
-# This .gitignore is appropriate for repositories deployed to GitHub Pages and using
-# a Gemfile as specified at https://github.com/github/pages-gem#conventional
+yaml
+CopyEdit
+name: Archive CosmosDB Records
 
-# Basic Jekyll gitignores (synchronize to Jekyll.gitignore)
-_site/
-.sass-cache/
-.jekyll-cache/
-.jekyll-metadata
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # Every Sunday at 3AM UTC
+  workflow_dispatch:
 
-# Additional Ruby/bundler ignore for when you run: bundle install
-/vendor
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-# Specific ignore for GitHub Pages
-# GitHub Pages will always use its own deployed version of pages-gem 
-# This means GitHub Pages will NOT use your Gemfile.lock and therefore it is
-# counterproductive to check this file into the repository.
-# Details at https://github.com/github/pages-gem/issues/768
-Gemfile.lock
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Install Azure SDK
+        run: pip install azure-cosmos azure-storage-blob
+
+      - name: Run Archive Script
+       run: python scripts/archive_cosmos_to_blob.py
+        env:
+          COSMOS_DB_URL: ${{ secrets.COSMOS_DB_URL }}
+          COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
+          COSMOS_DB_NAME: "BillingDB"
+          COSMOS_CONTAINER: "Records"
+          BLOB_CONN_STRING: ${{ secrets.BLOB_CONN_STRING }}
+          BLOB_CONTAINER: "billing-archive"
+
